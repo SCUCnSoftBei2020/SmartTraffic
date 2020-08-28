@@ -1,0 +1,9 @@
+#!/bin/bash
+
+export LANG="zh_CN.UTF-8"
+export DJANGO_SETTINGS_MODULE=cnsoft_backend.settings
+cd /app1
+cp /app/darknet/build/prepare ./
+cp /app/darknet/build/libdark.so ./
+
+python3 ./manage.py runserver 0.0.0.0:8000

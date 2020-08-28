@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=8">
+    <meta http-equiv="Expires" content="0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Cache-control" content="no-cache">
+    <meta http-equiv="Cache" content="no-cache">
+    <meta charset="utf-8">
+    <title>SUPER TRAFFIC</title>
+    <style type="text/css">
+        * {
+            padding: 0;
+            margin: 0;
+        }
+
+        .div1 {
+            position: absolute;
+            text-align: center;
+            top: 1%;
+            left: 43%;
+            background-color: rgba(137, 43, 226, 0.349);
+
+        }
+
+        .div2 {
+            position: absolute;
+            text-align: center;
+            top: 10%;
+            left: 2%;
+            box-shadow: 15px 15px 20px rgba(0, 0, 0, 0.5);
+            object-fit:fill;
+        }
+
+        .div3 {
+            position: absolute;
+            border: 4px solid rgb(230, 16, 16);
+            text-align: center;
+            top: 8%;
+            left: 68%;
+            width: 540px;
+            height: 240px;
+            box-shadow: 15px 15px 10px rgba(22, 1, 24, 0.5);
+        }
+
+        .div4 {
+            position: absolute;
+            border: 4px solid rgba(226, 13, 190, 0.377);
+            text-align: center;
+            top: 43%;
+            left: 62%;
+            height: 100px;
+        }
+
+        .div7 {
+            position: absolute;
+            border: 4px solid rgba(226, 13, 190, 0.377);
+            text-align: center;
+            top: 63%;
+            left: 62%;
+            height: 100px;
+        }
+        
+        .div5 {
+            position: absolute;
+            border: 4px solid rgba(226, 13, 190, 0.377);
+            text-align: center;
+            top: 20%;
+            left: 62%;
+            height: 150px;
+        }
+
+        .div6 {
+            position: absolute;
+            border: 4px solid rgb(230, 16, 16);
+            text-align: center;
+            top: 35%;
+            left: 68%;
+            width: 540px;
+            height: 540px;
+            box-shadow: 15px 15px 10px rgba(22, 1, 24, 0.5);
+        }
+
+        .spanx {
+            position: relative;
+            border: 2px solid rgb(41, 122, 228);
+            text-align: left;
+            height: 200px;
+        }
+
+        body {
+            background-image: url("/vdo/static/bkground.jpg");
+        }
+
+        #progress {
+            height: 20px;
+            background-color: orange;
+            display: inline-block;
+        }
+    </style>
+</head>
+
+<body>
+<script src="/vdo/static/VideoFrame.min.js"></script>
+<script src="/vdo/static/jquery.min.js"></script>
+
+<div class="div1">
+    <text id="cur_frame" style="color:rgb(66, 62, 5);font-size: 20px"></text>
+</div>
+<div class="div2">
+    <h2 style="color:rgb(21, 7, 44)"> --->>>实时视频<<<---
+        <select onchange="changeVideo()" id="selector">
+        {% for option in options %}
+            <option value="{{ option }}">{{ option }}</option>
+        {% endfor %}
+    </select>
+    </h2>
+
+    <video height="100%" width="1080" id="video">
+        <source id="myvideo" src=""></source>
+    </video>
+</div>
+<div class="div4">
+    <button id="play-pause" style="height:100px ; width: 100px; font-size:30px">Play</button>
+</div>
+<div class="div7">
+    <button id="restart" style="height:100px ; width: 100px; font-size:30px">Restart</button>
+</div>
+<div class="div3">
+    <h2> --->>>违章检测<<<--- </h2>
+    <span id="progress"></span>
+    <table id="show_violation" border="2" style="border-collapse: collapse; text-align:left; font-size: 20px; ">
+        <tr><th width='120'>车牌</th><th width='100'>违法代码</th><th width='150'>违法原因</th><th width='120'>处罚</th></tr>
+    </table>
+</div>
+<div class="div5">
+    <h2>流量统计</h2>
+    <text id="show_fcount">0</text>
+</div>
+<div class="div6">
+    <h2> --->>>车辆检测<<<--- </h2>
+
+    <table id="show_general" border="2" style="border-collapse: collapse; text-align:left; font-size: 20px; ">
+        <tr><th width='120'>车牌</th><th width='120'>ID</th><th width='120'>即时车速</th><th width='120'>均速</th></tr>
+    </table>
+</div>
+
+<script type="text/javascript">
+    var car_info_list;
+    var violation_list;
+    var violation_mapping;
+    var stage, curr, all, frmRate, vdo_path;
+    var video;
+    var int = self.setInterval(
+        function () {
+            check_progress()
+        }, 1000
+    );
+
+    function changeVideo(){
+        var value = $('select option:selected').val();
+        window.location = "{% url 'result' %}" + value + '/';
+    }
+
+    function uploadProgress() {
+        const percent = curr * 100 / all;
+        document.getElementById('progress').innerText = '阶段' + stage.toString() + ':' + percent.toFixed(2) + '%';
+        document.getElementById('progress').style.width = percent.toFixed(2) + '%';
+    }
+
+    function check_progress() {
+        $.getJSON("{% url 'progress' %}", function (result) {
+            stage = result.stage;
+            curr = result.curr;
+            all = result.all;
+            frmRate = result.framerate;
+            vdo_path = result.vdo;
+            uploadProgress();
+            if (vdo_path !== '') {
+                window.clearInterval(int);
+                let source = document.getElementById("myvideo");
+                let video = document.getElementById("video");
+                let timestamp = new Date().getTime();
+                source.setAttribute('src', vdo_path + '?t=' + timestamp);
+                video.load();
+
+                $.ajax(
+                    {
+                        url: '/vdo/general.json',
+                        dataType: "json",
+                        success: function (data) {
+                            car_info_list = data.general;
+                        }
+                    }
+                )
+                $.ajax(
+                    {
+                        url: '/vdo/violation.json',
+                        dataType: "json",
+                        success: function (data) {
+                            violation_list = data.violation;
+                        }
+                    }
+                )
+                $.ajax(
+                    {
+                        url: '/vdo/static/violation_mapping.json',
+                        dataType: "json",
+                        success: function (data) {
+                            violation_mapping = data;
+                        }
+                    }
+                )
+
+                finished();
+            }
+
+        })
+    }
+
+    function finished() {
+        var general_show = $("#show_general");
+        var violation_show = $("#show_violation");
+        var fcount_show = $("#show_fcount");
+        var obj_set = new Set();
+        video = VideoFrame({
+            id: 'video',
+            frameRate: frmRate,
+            callback: function (frame) {
+                var i = frame;
+                $("#cur_frame").text("");
+                $("#cur_frame").append("<b>当前帧数" + i + "</b>")
+                fcount_show.text("");
+                violation_show.text("");
+                violation_show.append("<tr><th width='120'>车牌</th><th width='100'>违法代码</th><th width='150'>违法原因</th><th width='120'>处罚</th></tr>");
+                general_show.text("");
+                general_show.append("<tr><th width='120'>车牌</th><th width='120'>ID</th><th width='120'>即时车速</th><th width='120'>均速</th></tr>");
+                $.each(car_info_list, function (j, jtem) { // when playing the ith frame iterating car_info_list
+                    let frm_spd;
+                    if (jtem.st_frame <= i && jtem.ed_frame >= i) {
+                        if (!obj_set.has(jtem.obj_id)) {
+                            obj_set.add(jtem.obj_id);
+                        }
+                        var speed_list = jtem.speed;
+                        for (var k = 0, len = speed_list.length; k < len; k++) {
+                            frm_spd = speed_list[k];
+                            if (i === frm_spd.frm) {
+                                if (jtem.plate === "") jtem.plate = "不可见/未知"
+                                general_show.append("<tr><td>" + jtem.plate + "</td> <td>" + jtem.obj_id + "</td> <td>" + frm_spd.spd + " km/h </td> <td>" + jtem.avg_speed + " km/h </td></tr>");
+                                break;
+                            }
+                        }
+                    }
+                })
+
+                $.each(violation_list, function (j, item) {
+                    if (item.st_frame <= i && item.ed_frame >= i) {
+                        if(item.obj_id === -1){
+                            item.plate = "行人";
+                        }
+                        else if(item.plate === "") {
+                            item.plate = "不可见/未知";
+                        }
+                        violation_show.append("<tr><td>" + item.plate + "</td> <td>" +
+                            violation_mapping[item.vio_type][0] + "</td>" +
+                            "<td>" + violation_mapping[item.vio_type][1] + "</td>" +
+                            "<td>" + violation_mapping[item.vio_type][2] + "</td> </tr>"
+                        );
+                    }
+                })
+
+                fcount_show.text(obj_set.size);
+            }
+        });
+
+    }
+
+    $('#play-pause').click(function () {
+        ChangeButtonText();
+    });
+
+    $('#restart').click(function () {
+        int = self.setInterval(
+        function () {
+            check_progress()
+        }, 1000);
+    });
+
+    function ChangeButtonText() {
+        if (video.video.paused) {
+            video.video.play();
+            video.listen('frame');
+            $("#play-pause").html('Pause');
+        } else {
+            video.video.pause();
+            video.stopListen();
+            $("#play-pause").html('Play');
+        }
+    }
+</script>
+</body>
+</html>

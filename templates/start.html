@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>SUPER TRAFFIC</title>
+<style type="text/css">
+    *{padding:0;margin:0;}
+    .spanx {
+        position: absolute;
+        width: 660px;
+        height: 300px;
+        border: 2px solid whitesmoke;
+        text-align: center;
+        top: 50%;
+        left: 40%;
+        margin-top: -200px;
+        margin-left: -150px;
+        background-color: cornflowerblue;
+    }
+    .spanxx {
+        position: absolute;
+        text-align: center;
+        top: 10%;
+        left: 32%;
+    }
+    .spanxxx {
+        position: absolute;
+        text-align: center;
+        top: 80%;
+        left: 43%;
+    }
+    body {
+        background-image: url("/vdo/static/bkground.jpg");
+    }
+    #progress{
+    height: 20px;
+    background-color: orange;
+    display: inline-block;
+    }
+    #file{
+        border: 4px dashed rgb(57, 42, 143);
+        text-align: center;
+
+    }
+    </style>
+</head>
+<body>
+    <div class="spanxx">
+        <a style="font-size:60px">SUPER智能交通检测系统</a>
+    </div>
+    <div class="spanx">
+        <h1>请传入要处理的视频</br></br></h1>
+        <form method="post" class="form1">
+            <input type="file" name="file1" id="file" style="font-size:30px"/>
+            <span id="progress"></span>
+        </form>
+        <button onclick="uploadFile()" style="font-size:36px">确认上传</button>
+    </div>
+    <div class="spanxxx">
+        <a style="font-size:30px">作者: 肖子霖,王涵</a></br>
+        <a style="font-size:30px">四川大学</a>
+    </div>
+
+        <script>
+        function uploadFile() {
+            var fd = new FormData();
+            fd.append("file", document.getElementById('file').files[0]);
+            var xhr = new XMLHttpRequest();
+            xhr.upload.addEventListener("progress", uploadProgress, false);
+            xhr.addEventListener("load", uploadComplete, false);
+            xhr.addEventListener("error", uploadFailed, false);
+            xhr.addEventListener("abort", uploadCanceled, false);
+            xhr.open("POST", "{% url 'upload' %}");//修改成自己的接口
+            xhr.send(fd);
+        }
+
+        function uploadProgress(evt) {
+            if (evt.lengthComputable) {
+                var percent = Math.round(evt.loaded * 100 / evt.total);
+
+                document.getElementById('progress').innerHTML = percent.toFixed(2) + '%';
+                document.getElementById('progress').style.width = percent.toFixed(2) + '%';
+            }
+            else {
+                document.getElementById('progress').innerHTML = 'unable to compute';
+            }
+        }
+        function uploadComplete(evt) {
+            /* 服务器端返回响应时候触发event事件*/
+            const data = JSON.parse(evt.target.responseText);
+            if(data.success){
+                window.location = "{% url 'result' %}";
+            }
+        }
+        function uploadFailed(evt) {
+            alert("There was an error attempting to upload the file.");
+        }
+        function uploadCanceled(evt) {
+            alert("The upload has been canceled by the user or the browser dropped the connection.");
+        }
+    </script>
+
+<!--<script>
+    $( function(){
+        $("#get_video").click(function() {
+            var formdata = new FormData();
+            formdata.append("v_path",$("#VideoPath").val());
+            $.ajax({
+                url:"/open_video",
+                type: "post",
+                data: formdata,
+                contentType: false,
+                processData: false,
+                success: function(data) {
+                    alert("打开成功!")
+
+                },
+                error: function(data) {
+                    alert("打开失败!")
+                }
+            })
+        })
+    });
+</script>-->
+
+</body>
+</html>
